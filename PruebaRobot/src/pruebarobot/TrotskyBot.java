@@ -9,7 +9,6 @@ import robocode.util.Utils;
 /**
  * PruebaRobot - a robot by Trotsky
  */
-enum Modo {movimiento, attack};
 public class TrotskyBot extends Robot
 {
     /**
@@ -45,13 +44,13 @@ public class TrotskyBot extends Robot
         direccionInicial = 0;
         if (direccionInicial == 0) {
             turnLeft(getHeading());
-        } else {
+        }/* else {
             if (getHeading() > 180) {
                 turnLeft(getHeading()-180);
             } else {
                 turnRight(180-getHeading());
             }
-        }
+        }*/
         turnGunLeft(90);//Apunta para abajo
         ahead(backSize[1]);//Va a la pared de arriba
         movInicFinalizado = true;
@@ -71,7 +70,7 @@ public class TrotskyBot extends Robot
         if (retries <= 0) {
             modoRobot = Modo.movimiento;
             retries = 10;
-            //arreglar
+            //arreglar0
             virginity = true;
             turnGunLeft(-getHeading()+angI+90);
         }

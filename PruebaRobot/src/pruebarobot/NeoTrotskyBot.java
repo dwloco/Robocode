@@ -31,7 +31,7 @@ public class NeoTrotskyBot extends Robot
     Modo modoRobot = Modo.movimiento;
     
     double ang = 50; //angulo de rotacion del arma en modo ataque
-    double angDefensa = 0; //angulo en el que se encuentra el enemigo
+    double angDefensa = -99999999; //angulo en el que se encuentra el enemigo
     
     int p = 1;//potencia del disparo
     
@@ -42,7 +42,7 @@ public class NeoTrotskyBot extends Robot
         backSize[0] = getBattleFieldWidth();
         backSize[1] = getBattleFieldHeight();
         dist = Math.max(backSize[0], backSize[1]);
-        setColors(Color.ORANGE, Color.GREEN, Color.RED);
+        setColors(Color.BLACK, Color.gray, Color.GREEN);
         movimientoInicial();
         while(true) {
             if (modoRobot == Modo.movimiento) { 
@@ -84,29 +84,37 @@ public class NeoTrotskyBot extends Robot
     boolean interrumpido = false;//Indica si el robot tuvo que parar para atacar
     boolean girando = false; //Si el robot se encuentra girando y encuentra un enemigo mas vale ignorarlo
     public void mover(){
-         ahead(dist * direccion);   
-         
-         Random r = new Random();
-         if (r.nextInt()%3 == 0) { //Hay una probabilidad del 33% de que gire pal otro lado
-             direccion *= -1;
-         }
+        ahead(dist * direccion);   
     }
     
     
     public void defender() {
-        fire(p);
+        p *= 4;
+        scan();
+        if (!encontrado) {
+            modoRobot = Modo.movimiento;
+            turnGunRight(-getGunHeading()+getHeading()-90);
+        }
     }
     
     /**
      * onScannedRobot: What to do when you see another robot
      */
+    boolean encontrado = false;
     public void onScannedRobot(ScannedRobotEvent e) {
-        fire(p);
+        if (e.getEnergy() >= getEnergy() && e.getName().equals("Walls")){
+            p = 1;
+            encontrado = false;
+        } else {
+            fire(p);
+            encontrado = true;
+        }
     }
 
     public void onBulletHit(BulletHitEvent e) {
         p++;
         if (!girando && !choque) {    
+            stop();
             contFails = 0;
             if (modoRobot != Modo.attack && modoRobot != Modo.defense && movInicFinalizado) {
                 modoRobot = Modo.attack;
@@ -135,14 +143,13 @@ public class NeoTrotskyBot extends Robot
     }
 
     
-    //double angIHitBullet;
     public void onHitByBullet(HitByBulletEvent e) {
-        //angIHitBullet = getGunHeading();
+        out.println(angDefensa + " - " + e.getBearing() + " - " + modoRobot);
         modoRobot = Modo.defense;
         if (angDefensa != e.getBearing()) {
             interrumpido = true;
             angDefensa = e.getBearing();
-            turnGunLeft(-getHeading()-e.getBearing()+getGunHeading());
+            turnGunLeft(-getHeading()-e.getBearing()+getGunHeading());//Apunta al enemigo
         }    
     }
 
@@ -154,21 +161,27 @@ public class NeoTrotskyBot extends Robot
             girando = false;
          }  
          interrumpido = false;
+         
+         Random r = new Random();
+         if (r.nextInt()%4 == 0) { //Hay una probabilidad del 25% de que gire pal otro lado
+             direccion *= -1;
+         }
     }
     
     //double angIHit;
     boolean choque = false;
     public void onHitRobot(HitRobotEvent e) {
-        choque = true;
-        //angIHit = getGunHeading();
-        turnGunLeft(-getHeading()-e.getBearing()+getGunHeading());
-        out.println(e.getBearing() + ":" + getGunHeading());
-        fire(p+10);
-        turnGunRight(-getGunHeading()+getHeading()-90);
-        interrumpido = true;
-        direccion *= -1;
-        mover();
-        choque = false;
+        if (modoRobot != Modo.defense) {
+            choque = true;
+            //angIHit = getGunHeading();
+            turnGunLeft(-getHeading()-e.getBearing()+getGunHeading());//Apunta al robot
+            fire(p+10);
+            turnGunRight(-getGunHeading()+getHeading()-90);//Normaliza el radar
+            interrumpido = true;
+            direccion *= -1;
+            mover();
+            choque = false;
+        }
     }
     
     

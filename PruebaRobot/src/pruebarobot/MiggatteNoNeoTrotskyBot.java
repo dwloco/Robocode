@@ -9,8 +9,8 @@ import robocode.util.Utils;
 /**
  * PruebaRobot - a robot by Trotsky
  */
-//enum Modo {movimiento, attack, defense};
-public class NeoTrotskyBot extends Robot
+enum Modo {movimiento, attack, defense};
+public class MiggatteNoNeoTrotskyBot extends Robot
 {
     /**
      * run: PruebaRobot's default behavior
@@ -89,6 +89,7 @@ public class NeoTrotskyBot extends Robot
     
     
     public void defender() {
+        encontrado = false;
         p *= 4;
         scan();
         if (!encontrado) {
@@ -119,6 +120,7 @@ public class NeoTrotskyBot extends Robot
             if (modoRobot != Modo.attack && modoRobot != Modo.defense && movInicFinalizado) {
                 modoRobot = Modo.attack;
                 interrumpido = true;
+                direccion *= -1;//vamos para el otro lado
                 stop();
             } else {
                 retries++;//Si la bala impacta se le da otra oportunidad

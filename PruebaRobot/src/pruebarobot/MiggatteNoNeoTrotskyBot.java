@@ -42,15 +42,19 @@ public class MiggatteNoNeoTrotskyBot extends Robot
         backSize[0] = getBattleFieldWidth();
         backSize[1] = getBattleFieldHeight();
         dist = Math.max(backSize[0], backSize[1]);
-        setColors(Color.BLACK, Color.gray, Color.GREEN);
+        setColors(Color.DARK_GRAY, Color.gray, Color.GREEN);
         movimientoInicial();
         while(true) {
-            if (modoRobot == Modo.movimiento) { 
-                mover();
-            } else if (modoRobot == Modo.attack) {
-                atacar();
-            } else if (modoRobot == Modo.defense) {
-                defender();
+            switch (modoRobot) {
+                case movimiento:
+                    mover();
+                    break;
+                case attack:
+                    atacar();
+                    break;
+                case defense:
+                    defender();
+                    break;
             }
         }
     }
@@ -101,15 +105,19 @@ public class MiggatteNoNeoTrotskyBot extends Robot
     /**
      * onScannedRobot: What to do when you see another robot
      */
-    boolean encontrado = false;
+    boolean encontrado = false;//Determina si el robot debe ser atacado
     public void onScannedRobot(ScannedRobotEvent e) {
-        if (e.getEnergy() >= getEnergy() && e.getName().equals("Walls")){
-            p = 1;
-            encontrado = false;
-        } else {
-            fire(p);
-            encontrado = true;
+        out.println(e.getName());
+        if (modoRobot == Modo.defense){ //determina la inimputabilidad del robot
+            if (e.getEnergy() > getEnergy() && !e.getName().contains("Walls")){ //no conviene pelear contra alguien más grande
+                //Ah, y si es walls esto no aplica
+                p = 1;
+                encontrado = false;
+            } else {
+                encontrado = true;
+            }
         }
+        fire(p);
     }
 
     public void onBulletHit(BulletHitEvent e) {
@@ -117,7 +125,7 @@ public class MiggatteNoNeoTrotskyBot extends Robot
         if (!girando && !choque) {    
             stop();
             contFails = 0;
-            if (modoRobot != Modo.attack && modoRobot != Modo.defense && movInicFinalizado) {
+            if (modoRobot != Modo.attack && modoRobot != Modo.defense && movInicFinalizado && getOthers() == 1) {
                 modoRobot = Modo.attack;
                 interrumpido = true;
                 direccion *= -1;//vamos para el otro lado

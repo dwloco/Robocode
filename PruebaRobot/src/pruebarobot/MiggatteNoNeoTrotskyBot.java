@@ -16,13 +16,8 @@ public class MiggatteNoNeoTrotskyBot extends Robot
      * run: PruebaRobot's default behavior
      */
     
-    
-    
     int direccionInicial;
     int direccion = 1;
-    
-    double robotSize[] = new double[2];//0 -> x - 1 -> y
-    double backSize[] = new double[2];
     
     double dist; //distancia que va a recorrer el robot
     
@@ -35,22 +30,21 @@ public class MiggatteNoNeoTrotskyBot extends Robot
     
     int p = 1;//potencia del disparo
     
+    boolean randomMovementEnabled = false;
     
     public void run() {
-        robotSize[0] = getWidth();
-        robotSize[1] = getHeight();
-        backSize[0] = getBattleFieldWidth();
-        backSize[1] = getBattleFieldHeight();
-        dist = Math.max(backSize[0], backSize[1]);
+        dist = Math.max(getBattleFieldWidth(), getBattleFieldHeight());
         setColors(Color.DARK_GRAY, Color.gray, Color.GREEN);
         movimientoInicial();
         while(true) {
             switch (modoRobot) {
                 case movimiento:
                     mover();
+                    //doNothing();
                     break;
                 case attack:
                     atacar();
+                    //doNothing();
                     break;
                 case defense:
                     defender();
@@ -93,10 +87,8 @@ public class MiggatteNoNeoTrotskyBot extends Robot
     
     
     public void defender() {
-        encontrado = false;
-        p *= 4;
-        scan();
-        if (!encontrado) {
+        p = 10;
+        if (!Escanear()) {
             modoRobot = Modo.movimiento;
             turnGunRight(-getGunHeading()+getHeading()-90);
         }
@@ -107,9 +99,8 @@ public class MiggatteNoNeoTrotskyBot extends Robot
      */
     boolean encontrado = false;//Determina si el robot debe ser atacado
     public void onScannedRobot(ScannedRobotEvent e) {
-        out.println(e.getName());
         if (modoRobot == Modo.defense){ //determina la inimputabilidad del robot
-            if (e.getEnergy() > getEnergy() && !e.getName().contains("Walls")){ //no conviene pelear contra alguien más grande
+            if (e.getEnergy() > getEnergy()*1.5 && !e.getName().contains("Walls")){ //no conviene pelear contra alguien más grande
                 //Ah, y si es walls esto no aplica
                 p = 1;
                 encontrado = false;
@@ -118,6 +109,10 @@ public class MiggatteNoNeoTrotskyBot extends Robot
             }
         }
         fire(p);
+        
+        if (e.getName().contains("Walls") && getOthers() == 1) {
+            randomMovementEnabled = true;
+        }
     }
 
     public void onBulletHit(BulletHitEvent e) {
@@ -128,8 +123,8 @@ public class MiggatteNoNeoTrotskyBot extends Robot
             if (modoRobot != Modo.attack && modoRobot != Modo.defense && movInicFinalizado && getOthers() == 1) {
                 modoRobot = Modo.attack;
                 interrumpido = true;
-                direccion *= -1;//vamos para el otro lado
-                stop();
+                
+                //stop();
             } else {
                 retries++;//Si la bala impacta se le da otra oportunidad
             }
@@ -154,12 +149,14 @@ public class MiggatteNoNeoTrotskyBot extends Robot
 
     
     public void onHitByBullet(HitByBulletEvent e) {
-        out.println(angDefensa + " - " + e.getBearing() + " - " + modoRobot);
+        //out.println(angDefensa + " - " + e.getBearing() + " - " + modoRobot);
         modoRobot = Modo.defense;
-        if (angDefensa != e.getBearing()) {
+        //if (angDefensa != e.getBearing()) {
+        if (!Escanear()) {
             interrumpido = true;
             angDefensa = e.getBearing();
-            turnGunLeft(-getHeading()-e.getBearing()+getGunHeading());//Apunta al enemigo
+            ApuntarAlEnemigo(e.getBearing());
+            
         }    
     }
 
@@ -172,28 +169,45 @@ public class MiggatteNoNeoTrotskyBot extends Robot
          }  
          interrumpido = false;
          
-         Random r = new Random();
-         if (r.nextInt()%10 == 0) { //Hay una probabilidad del 10% de que gire pal otro lado
-             direccion *= -1;
+         if (randomMovementEnabled) {
+            Random r = new Random();
+            if (r.nextInt()%4 == 0) { //Hay una probabilidad del 25% de que gire pal otro lado
+                direccion *= -1;
+            }
          }
     }
-    
-    //double angIHit;
+
     boolean choque = false;
     public void onHitRobot(HitRobotEvent e) {
         if (modoRobot != Modo.defense) {
             choque = true;
-            //angIHit = getGunHeading();
-            turnGunLeft(-getHeading()-e.getBearing()+getGunHeading());//Apunta al robot
-            fire(p+10);
-            turnGunRight(-getGunHeading()+getHeading()-90);//Normaliza el radar
-            interrumpido = true;
-            direccion *= -1;
-            mover();
-            choque = false;
+            ApuntarAlEnemigo(e.getBearing());
+            if (Escanear()) {
+                fire(p+10);
+            } else {
+                turnGunRight(-getGunHeading()+getHeading()-90);//Normaliza el radar
+                interrumpido = true;
+                direccion *= -1;
+                mover();
+                choque = false;
+            }
         }
     }
     
+    //Se fija si el enemigo esta en el radar
+    boolean Escanear() {
+        encontrado = false;
+        scan();
+        return encontrado;
+    }
     
+    void ApuntarAlEnemigo(double angEnemigo) {
+        out.println(angEnemigo + " " + getGunHeading());
+        if (angEnemigo < 0){
+            turnGunLeft(-getHeading()-angEnemigo+getGunHeading());//Apunta al enemigo
+        } else {
+            turnGunRight(getHeading()+angEnemigo-getGunHeading());//Apunta al enemigo
+        }
+    }
     
 }
